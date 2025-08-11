@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TV Guide</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: #eee; }
+    table { border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; }
+    th, td { border: 1px solid #555; padding: 8px; text-align: left; }
+    th { background-color: #444; }
+    tr:nth-child(even) { background-color: #333; }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center;">TV Guide</h1>
+  <table id="guide-table">
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Start Time</th>
+        <th>Title</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadGuide() {
+      const url = 'http://47.12.244.234:6454/api/xmltv.xml';
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network error');
+
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlText, "application/xml");
+
+        const tbody = document.querySelector('#guide-table tbody');
+        tbody.innerHTML = '';
+
+        const programmes = xml.querySelectorAll('programme');
+
+        programmes.forEach(prog => {
+          const channel = prog.getAttribute('channel');
+          let start = prog.getAttribute('start');
+          start = new Date(
+            start.slice(0,4)+'-'+start.slice(4,6)+'-'+start.slice(6,8)+'T'+
+            start.slice(8,10)+':'+start.slice(10,12)+':'+start.slice(12,14)+'Z'
+          ).toLocaleString();
+
+          const title = prog.querySelector('title')?.textContent || '';
+          const desc = prog.querySelector('desc')?.textContent || '';
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${channel}</td>
+            <td>${start}</td>
+            <td>${title}</td>
+            <td>${desc}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+      } catch (error) {
+        document.body.innerHTML = '<p style="color:red; text-align:center;">Failed to load TV Guide.</p>';
+        console.error(error);
+      }
+    }
+
+    loadGuide();
+  </script>
+</body>
+</html>
